@@ -7,17 +7,18 @@ import yaml
 from getpass import getpass
 import requests
 
-def get_output_directory(file_prefix):
-     """Prompt user for output directory, default to ./exports/{file_prefix}/ in current working directory."""
-     default_output = os.path.join(os.getcwd(), "exports", file_prefix)
+def get_output_directory():
+    """Prompt user for output directory where inputs.yml and CSVs will be stored."""
+    user_input = input("Enter output directory: ").strip()
 
-     print(f"\nDefault output directory: {default_output}")
-     user_input = input("Enter output directory (or press Enter for default): ").strip()
+    if not user_input:
+        print("Error: Output directory is required.")
+        exit(1)
 
-     output_dir = user_input if user_input else default_output
-     os.makedirs(output_dir, exist_ok=True)
-     print(f"CSVs will be saved to: {output_dir}\n")
-     return output_dir
+    output_dir = os.path.abspath(user_input)
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"CSVs will be saved to: {output_dir}\n")
+    return output_dir
 
 YAML_TEMPLATE = """
 Collection Title:
@@ -133,8 +134,8 @@ def get_ark(username, password, shoulder):
         return ark
 
 
-def check_inputs(path):
-    yaml_path = os.path.join(path, "inputs.yml")
+def check_inputs(output_dir):
+    yaml_path = os.path.join(output_dir, "inputs.yml")
     if os.path.exists(yaml_path):
         return True
     print(f"Input file not found. Creating template {yaml_path}.")
@@ -143,13 +144,13 @@ def check_inputs(path):
     return False
 
 
-def get_inputs(path):
-    yaml_path = os.path.join(path, "inputs.yml")
+def get_inputs(output_dir):
+    yaml_path = os.path.join(output_dir, "inputs.yml")
     with open(yaml_path, "r") as yaml_file:
         defaults = yaml.load(yaml_file, Loader=yaml.Loader)
         title = defaults.pop("Collection Title")
         shortcode = defaults.pop("Collection Shortcode", None)
-        file_prefix = shortcode if shortcode else title
+        file_prefix = shortcode if shortcode else (title if title else os.path.basename(os.getcwd()))
         collection_ark = defaults.pop("Collection ARK")
         page_prefix = defaults.pop("page title prefix")
         extensions_raw = defaults.pop("file extensions")
@@ -318,12 +319,14 @@ def process_works_and_pages(root, title, file_prefix, collection_ark, defaults, 
 
 
 def main(root):
-    title, file_prefix, collection_ark, defaults, work_defaults, page_prefix, file_extensions, ezid_user, ezid_password, ark_shoulder = get_inputs(root)
-    output_dir = get_output_directory(file_prefix)
+    output_dir = get_output_directory()
+    if not check_inputs(output_dir):
+        return
+    title, file_prefix, collection_ark, defaults, work_defaults, page_prefix, file_extensions, ezid_user, ezid_password, ark_shoulder = get_inputs(output_dir)
     collection_ark = process_level0(root, title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder, output_dir)
     mode = detect_mode(root, file_extensions)
     process_works_and_pages(root, title, file_prefix, collection_ark, defaults, work_defaults, page_prefix,
-                             file_extensions, mode, ezid_user, ezid_password, ark_shoulder, output_dir)
+                            file_extensions, mode, ezid_user, ezid_password, ark_shoulder, output_dir)
 
 
 if __name__ == "__main__":
@@ -337,5 +340,4 @@ if __name__ == "__main__":
     )
     parser.add_argument('path', help='the path to the collection')
     args = parser.parse_args()
-    if check_inputs(args.path) is True:
-        main(args.path)
+    main(args.path)
