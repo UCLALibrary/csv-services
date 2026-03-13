@@ -7,6 +7,18 @@ import yaml
 from getpass import getpass
 import requests
 
+def get_output_directory(file_prefix):
+    """Prompt user for output directory, default to ./exports/{file_prefix}/ in current working directory."""
+    default_output = os.path.join(os.getcwd(), "exports", file_prefix)
+
+    print(f"\nDefault output directory: {default_output}")
+    user_input = input("Enter output directory (or press Enter for default): ").strip()
+
+    output_dir = user_input if user_input else default_output
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"CSVs will be saved to: {output_dir}\n")
+    return output_dir
+
 YAML_TEMPLATE = """
 Collection Title:
 Collection Shortcode:
@@ -161,12 +173,12 @@ def get_inputs(path):
         return title, file_prefix, collection_ark, defaults, page_prefix, layer_prefix, layer_type, file_extensions, page_vol_defaults, ezid_user, ezid_password, ark_shoulder
 
 
-def process_level0(root, title, file_prefix, ark, defaults, ezid_user, ezid_password, ark_shoulder):
+def process_level0(root, title, file_prefix, ark, defaults, ezid_user, ezid_password, ark_shoulder, output_dir):
     if ark:
         print(f"Collection ARK provided ({ark}) — skipping collection CSV.")
         return ark
     ark = get_ark(ezid_user, ezid_password, ark_shoulder)
-    csv_path = os.path.join(root, f"{file_prefix}-collection.csv")
+    csv_path = os.path.join(output_dir, f"{file_prefix}-collection.csv")
     data = {
         "Item ARK": ark,
         "Object Type": "Collection",
@@ -181,10 +193,10 @@ def process_level0(root, title, file_prefix, ark, defaults, ezid_user, ezid_pass
     return ark
 
 
-def process_level1(root, title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder):
+def process_level1(root, title, file_prefix, collection_ark, defaults, page_vol_def, ezid_user, ezid_password, ark_shoulder, output_dir):
     dirs = sorted([d for d in os.scandir(root) if d.is_dir()], key=lambda x: x.name)
-    csv_path = os.path.join(root, f"{file_prefix}-works.csv")
-    headers = ALL_HEADERS + COLLECTION_HEADERS
+    csv_path = os.path.join(output_dir, f"{file_prefix}-works.csv")
+    headers = ALL_HEADERS + COLLECTION_HEADERS + PAGE_VOL_HEADERS
     works = []
     with open(csv_path, "w") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=headers)
@@ -198,14 +210,15 @@ def process_level1(root, title, file_prefix, collection_ark, defaults, ezid_user
                 "Title": d.name
             }
             data.update(defaults)
+            data.update(page_vol_def) 
             writer.writerow(data)
             works.append((d, ark))
     return works
 
 
-def process_level2(root, file_prefix, works, page_prefix, page_vol_def, ezid_user, ezid_password, ark_shoulder):
-    csv_path = os.path.join(root, f"{file_prefix}-pages.csv")
-    headers = ALL_HEADERS + PAGE_VOL_HEADERS + SEQUENCE_HEADERS
+def process_level2(root, file_prefix, works, page_prefix, ezid_user, ezid_password, ark_shoulder, output_dir):
+    csv_path = os.path.join(output_dir, f"{file_prefix}-pages.csv")
+    headers = ALL_HEADERS + SEQUENCE_HEADERS
     pages = []
     with open(csv_path, "w") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=headers)
@@ -222,14 +235,13 @@ def process_level2(root, file_prefix, works, page_prefix, page_vol_def, ezid_use
                     "Title": page_title,
                     "Item Sequence": seq
                 }
-                data.update(page_vol_def)
                 writer.writerow(data)
                 pages.append((d, ark))
     return pages
 
 
-def process_level3(root, file_prefix, pages, layer_type, layer_prefix, file_extensions):
-    csv_path = os.path.join(root, f"{file_prefix}-layers.csv")
+def process_level3(root, file_prefix, pages, layer_type, layer_prefix, file_extensions, output_dir):
+    csv_path = os.path.join(output_dir, f"{file_prefix}-layers.csv")
     headers = ALL_HEADERS + SEQUENCE_HEADERS
     with open(csv_path, "w") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=headers)
@@ -256,10 +268,11 @@ def process_level3(root, file_prefix, pages, layer_type, layer_prefix, file_exte
 
 def main(root):
     title, file_prefix, collection_ark, defaults, page_prefix, layer_prefix, layer_type, file_extensions, page_vol_def, ezid_user, ezid_password, ark_shoulder = get_inputs(root)
-    collection_ark = process_level0(root, title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder)
-    works = process_level1(root, title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder)
-    pages = process_level2(root, file_prefix, works, page_prefix, page_vol_def, ezid_user, ezid_password, ark_shoulder)
-    process_level3(root, file_prefix, pages, layer_type, layer_prefix, file_extensions)
+    output_dir = get_output_directory(file_prefix)
+    collection_ark = process_level0(root, title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder, output_dir)
+    works = process_level1(root, title, file_prefix, collection_ark, defaults, page_vol_def, ezid_user, ezid_password, ark_shoulder, output_dir)
+    pages = process_level2(root, file_prefix, works, page_prefix, ezid_user, ezid_password, ark_shoulder, output_dir)
+    process_level3(root, file_prefix, pages, layer_type, layer_prefix, file_extensions, output_dir)
 
 
 if __name__ == "__main__":
