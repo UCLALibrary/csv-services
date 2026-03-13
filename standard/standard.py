@@ -7,6 +7,18 @@ import yaml
 from getpass import getpass
 import requests
 
+def get_output_directory(file_prefix):
+     """Prompt user for output directory, default to ./exports/{file_prefix}/ in current working directory."""
+     default_output = os.path.join(os.getcwd(), "exports", file_prefix)
+
+     print(f"\nDefault output directory: {default_output}")
+     user_input = input("Enter output directory (or press Enter for default): ").strip()
+
+     output_dir = user_input if user_input else default_output
+     os.makedirs(output_dir, exist_ok=True)
+     print(f"CSVs will be saved to: {output_dir}\n")
+     return output_dir
+
 YAML_TEMPLATE = """
 Collection Title:
 Collection Shortcode:
@@ -152,12 +164,12 @@ def get_inputs(path):
         return title, file_prefix, collection_ark, defaults, work_defaults, page_prefix, file_extensions, ezid_user, ezid_password, ark_shoulder
 
 
-def process_level0(root, title, file_prefix, ark, defaults, ezid_user, ezid_password, ark_shoulder):
+def process_level0(root, title, file_prefix, ark, defaults, ezid_user, ezid_password, ark_shoulder, output_dir):
     if ark:
         print(f"Collection ARK provided ({ark}) — skipping collection CSV.")
         return ark
     ark = get_ark(ezid_user, ezid_password, ark_shoulder)
-    csv_path = os.path.join(root, f"{file_prefix}-collection.csv")
+    csv_path = os.path.join(output_dir, f"{file_prefix}-collection.csv")
     data = {
         "Item ARK": ark,
         "Object Type": "Collection",
@@ -232,13 +244,13 @@ def _write_complex_work_row(dir_entry, collection_ark, defaults, work_defaults, 
     return ark
 
 
-def process_works_and_pages(root, title, file_prefix, collection_ark, defaults, work_defaults, page_prefix, file_extensions, mode, ezid_user, ezid_password, ark_shoulder):
+def process_works_and_pages(root, title, file_prefix, collection_ark, defaults, work_defaults, page_prefix, file_extensions, mode, ezid_user, ezid_password, ark_shoulder, output_dir):
     works_headers = ALL_HEADERS + COLLECTION_HEADERS + WORK_HEADERS
     complex_works = []  # (dir_entry, work_ark) pairs that need page rows
 
     if mode == 'all_simple':
         print("Mode: all simple — image files at collection root → Works only.")
-        works_csv_path = os.path.join(root, f"{file_prefix}-works.csv")
+        works_csv_path = os.path.join(output_dir, f"{file_prefix}-works.csv")
         with open(works_csv_path, "w") as works_file:
             writer = csv.DictWriter(works_file, fieldnames=works_headers)
             writer.writeheader()
@@ -248,7 +260,7 @@ def process_works_and_pages(root, title, file_prefix, collection_ark, defaults, 
 
     elif mode == 'all_complex':
         print("Mode: all complex — subfolders at collection root → Works + Pages.")
-        works_csv_path = os.path.join(root, f"{file_prefix}-works.csv")
+        works_csv_path = os.path.join(output_dir, f"{file_prefix}-works.csv")
         with open(works_csv_path, "w") as works_file:
             writer = csv.DictWriter(works_file, fieldnames=works_headers)
             writer.writeheader()
@@ -264,7 +276,7 @@ def process_works_and_pages(root, title, file_prefix, collection_ark, defaults, 
         complex_path = os.path.join(root, 'complex')
 
         if os.path.isdir(simple_path):
-            simple_csv_path = os.path.join(root, f"{file_prefix}-works-simple.csv")
+            simple_csv_path = os.path.join(output_dir, f"{file_prefix}-works-simple.csv")
             with open(simple_csv_path, "w") as simple_file:
                 writer = csv.DictWriter(simple_file, fieldnames=works_headers)
                 writer.writeheader()
@@ -273,7 +285,7 @@ def process_works_and_pages(root, title, file_prefix, collection_ark, defaults, 
                                            writer, ezid_user, ezid_password, ark_shoulder)
 
         if os.path.isdir(complex_path):
-            complex_csv_path = os.path.join(root, f"{file_prefix}-works-complex.csv")
+            complex_csv_path = os.path.join(output_dir, f"{file_prefix}-works-complex.csv")
             with open(complex_csv_path, "w") as complex_file:
                 writer = csv.DictWriter(complex_file, fieldnames=works_headers)
                 writer.writeheader()
@@ -285,7 +297,7 @@ def process_works_and_pages(root, title, file_prefix, collection_ark, defaults, 
 
     # Write pages CSV only if there are complex works
     if complex_works:
-        pages_csv_path = os.path.join(root, f"{file_prefix}-pages.csv")
+        pages_csv_path = os.path.join(output_dir, f"{file_prefix}-pages.csv")
         pages_headers = ALL_HEADERS + SEQUENCE_HEADERS
         with open(pages_csv_path, "w") as pages_file:
             pages_writer = csv.DictWriter(pages_file, fieldnames=pages_headers)
@@ -293,7 +305,7 @@ def process_works_and_pages(root, title, file_prefix, collection_ark, defaults, 
             for work_dir, work_ark in complex_works:
                 for seq, f in enumerate(_image_files(work_dir.path, file_extensions), start=1):
                     name_without_ext, _ = os.path.splitext(f.name)
-                    page_title = f"{page_prefix} {name_without_ext}" if page_prefix else name_without_ext
+                    page_title = f"{page_prefix} {seq}" if page_prefix else name_without_ext
                     data = {
                         "Item ARK": child_ark(work_ark),
                         "Parent ARK": work_ark,
@@ -307,10 +319,11 @@ def process_works_and_pages(root, title, file_prefix, collection_ark, defaults, 
 
 def main(root):
     title, file_prefix, collection_ark, defaults, work_defaults, page_prefix, file_extensions, ezid_user, ezid_password, ark_shoulder = get_inputs(root)
-    collection_ark = process_level0(root, title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder)
+    output_dir = get_output_directory(file_prefix)
+    collection_ark = process_level0(root, title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder, output_dir)
     mode = detect_mode(root, file_extensions)
     process_works_and_pages(root, title, file_prefix, collection_ark, defaults, work_defaults, page_prefix,
-                            file_extensions, mode, ezid_user, ezid_password, ark_shoulder)
+                             file_extensions, mode, ezid_user, ezid_password, ark_shoulder, output_dir)
 
 
 if __name__ == "__main__":
