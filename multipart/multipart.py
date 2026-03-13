@@ -6,6 +6,19 @@ import yaml
 from getpass import getpass
 import requests
 
+def get_output_directory():
+    """Prompt user for output directory where inputs.yml and CSVs will be stored."""
+    user_input = input("Enter output directory: ").strip()
+
+    if not user_input:
+        print("Error: Output directory is required.")
+        exit(1)
+
+    output_dir = os.path.abspath(user_input)
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"CSVs will be saved to: {output_dir}\n")
+    return output_dir
+
 YAML_TEMPLATE = """
 Collection Title:
 Collection Shortcode:
@@ -97,9 +110,24 @@ def mint_ark(username, password, shoulder):
         print(f"Error minting ARK: {response.status_code} - {response.text}")
         print(f"Data sent: {data}")
         return None
-
+    
 # Betanumeric alphabet (no vowels) used by the NOID standard
 _NOID_CHARS = '0123456789bcdfghjkmnpqrstvwxz'
+
+def fake_ark():
+    """Generate a placeholder ARK for testing when EZID credentials are not provided."""
+    noid = ''.join(random.choices(_NOID_CHARS, k=8))
+    return f"ark:/FAKE/{noid}"
+
+def get_ark(username, password, shoulder):
+    """Mint a real ARK if credentials are provided, otherwise generate a placeholder."""
+    if username and password and shoulder:
+        ark = mint_ark(username, password, shoulder)
+        return ark if ark else "ERROR: ARK not minted"
+    else:
+        ark = fake_ark()
+        print(f"No EZID credentials provided — using placeholder ARK: {ark}")
+        return ark
 
 def child_ark(parent_ark):
     """Derive a child ARK by appending a locally-generated NOID qualifier to the parent ARK."""
@@ -107,8 +135,8 @@ def child_ark(parent_ark):
     return f"{parent_ark}/{noid}"
 
 
-def check_inputs(path):
-    yaml_path = os.path.join(path, "inputs.yml")
+def check_inputs(output_dir):
+    yaml_path = os.path.join(output_dir, "inputs.yml")
     if os.path.exists(yaml_path):
         return True
     print(f"Input file not found. Creating template {yaml_path}.")
@@ -117,13 +145,13 @@ def check_inputs(path):
     return False
 
 
-def get_inputs(path):
-    yaml_path = os.path.join(path, "inputs.yml")
+def get_inputs(output_dir):
+    yaml_path = os.path.join(output_dir, "inputs.yml")
     with open(yaml_path, "r") as yaml_file:
         defaults = yaml.load(yaml_file, Loader=yaml.Loader)
         title = defaults.pop("Collection Title")
         shortcode = defaults.pop("Collection Shortcode", None)
-        file_prefix = shortcode if shortcode else title
+        file_prefix = shortcode if shortcode else (title if title else os.path.basename(os.getcwd()))
         collection_ark = defaults.pop("Collection ARK")
         vol_prefix = defaults.pop("vol title prefix")
         page_prefix = defaults.pop("page title prefix")
@@ -134,14 +162,12 @@ def get_inputs(path):
         return title, file_prefix, collection_ark, defaults, vol_prefix, page_prefix, vol_defaults, ezid_user, ezid_password, ark_shoulder
 
 
-def process_level0(root, title, file_prefix, ark, defaults, ezid_user, ezid_password, ark_shoulder):
+def process_level0(root, title, file_prefix, ark, defaults, ezid_user, ezid_password, ark_shoulder, output_dir):
     if ark:
         print(f"Collection ARK provided ({ark}) — skipping collection CSV.")
         return ark
-    ark = mint_ark(ezid_user, ezid_password, ark_shoulder)
-    if not ark:
-        ark = "ERROR: ARK not minted"
-    csv_path = os.path.join(root, f"{file_prefix}-collection.csv")
+    ark = get_ark(ezid_user, ezid_password, ark_shoulder)
+    csv_path = os.path.join(output_dir, f"{file_prefix}-collection.csv")
     data = {
         "Item ARK": ark,
         "Object Type": "Collection",
@@ -156,18 +182,16 @@ def process_level0(root, title, file_prefix, ark, defaults, ezid_user, ezid_pass
     return ark
     
 
-def process_level1(root, title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder):
+def process_level1(root, title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder, output_dir):
     dirs = sorted([dir for dir in os.scandir(root) if dir.is_dir()], key=lambda x:x.name)
-    csv_path = os.path.join(root, f"{file_prefix}-multiworks.csv")
+    csv_path = os.path.join(output_dir, f"{file_prefix}-multiworks.csv")
     headers = ALL_HEADERS + MULTI_HEADERS
     works = []
     with open(csv_path, "w") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=headers)
         writer.writeheader()
         for dir in dirs:
-            ark = mint_ark(ezid_user, ezid_password, ark_shoulder) #using mint_ark here
-            if not ark:
-                ark = "ERROR: ARK not minted"
+            ark = get_ark(ezid_user, ezid_password, ark_shoulder)
             data = {
                 "Item ARK": ark,
                 "Parent ARK": collection_ark,
@@ -182,8 +206,8 @@ def process_level1(root, title, file_prefix, collection_ark, defaults, ezid_user
     return works
     
 
-def process_level2(root, file_prefix, works, vol_pre, vol_def, ezid_user, ezid_password, ark_shoulder):
-    csv_path = os.path.join(root, f"{file_prefix}-vols.csv")
+def process_level2(root, file_prefix, works, vol_pre, vol_def, ezid_user, ezid_password, ark_shoulder, output_dir):
+    csv_path = os.path.join(output_dir, f"{file_prefix}-vols.csv")
     headers = ALL_HEADERS + VOL_HEADERS
     volumes = []
     with open(csv_path, "w") as csv_file:
@@ -192,9 +216,7 @@ def process_level2(root, file_prefix, works, vol_pre, vol_def, ezid_user, ezid_p
         for work, work_ark in works:
             dirs = sorted([dir for dir in os.scandir(work.path) if dir.is_dir()], key=lambda x:x.name)
             for dir in dirs:
-                ark = mint_ark(ezid_user, ezid_password, ark_shoulder) #using mint_ark here
-                if not ark:
-                    ark = "ERROR: ARK not minted"
+                ark = get_ark(ezid_user, ezid_password, ark_shoulder)
                 data = {
                     "Item ARK": ark,
                     "Parent ARK": work_ark,
@@ -207,8 +229,8 @@ def process_level2(root, file_prefix, works, vol_pre, vol_def, ezid_user, ezid_p
     return volumes
 
 
-def process_level3(root, file_prefix, volumes, page_prefix):
-    csv_path = os.path.join(root, f"{file_prefix}-pages.csv")
+def process_level3(root, file_prefix, volumes, page_prefix, output_dir):
+    csv_path = os.path.join(output_dir, f"{file_prefix}-pages.csv")
     headers = ALL_HEADERS + PAGE_HEADERS
     with open(csv_path, "w") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=headers)
@@ -222,7 +244,7 @@ def process_level3(root, file_prefix, volumes, page_prefix):
                     "Item ARK": ark,
                     "Parent ARK": vol_ark,
                     "Object Type": "Page",
-                    "Title": f"{page_prefix} {file_name_without_extension}",
+                    "Title": f"{page_prefix} {seq}",
                     "File Name": os.path.join(vol.path, file),
                     "Item Sequence": seq
                 }
@@ -230,11 +252,14 @@ def process_level3(root, file_prefix, volumes, page_prefix):
 
 
 def main(root):
-    title, file_prefix, collection_ark, defaults, vpre, page_prefix, vdef, ezid_user, ezid_password, ark_shoulder = get_inputs(root)
-    collection_ark = process_level0(root, title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder)
-    works = process_level1(root, title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder)
-    volumes = process_level2(root, file_prefix, works, vpre, vdef, ezid_user, ezid_password, ark_shoulder)
-    process_level3(root, file_prefix, volumes, page_prefix)
+    output_dir = get_output_directory()
+    if not check_inputs(output_dir):
+        return
+    title, file_prefix, collection_ark, defaults, vpre, page_prefix, vdef, ezid_user, ezid_password, ark_shoulder = get_inputs(output_dir)
+    collection_ark = process_level0(root, title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder, output_dir)
+    works = process_level1(root, title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder, output_dir)
+    volumes = process_level2(root, file_prefix, works, vpre, vdef, ezid_user, ezid_password, ark_shoulder, output_dir)
+    process_level3(root, file_prefix, volumes, page_prefix, output_dir)
 
 
 if __name__ == "__main__":
@@ -244,6 +269,5 @@ if __name__ == "__main__":
     )
     parser.add_argument('path', help='the path to the collection')
     args = parser.parse_args()
-    if check_inputs(args.path) is True:
-        main(args.path)
+    main(args.path)
 
