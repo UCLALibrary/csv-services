@@ -1,0 +1,30 @@
+
+Collection Title: Test Collection
+Collection Shortcode: testcoll
+Collection ARK: arktest
+
+# Collection and Work Defaults
+Visibility: vtest
+Genre: gtest
+Repository: rtest
+Date.creation: dctest
+Date.normalized: dntest
+Type.typeOfResource: ttest
+Rights.copyrightStatus: rctest
+Rights.servicesContact: rstest
+Language: ltest
+
+# Page Defaults
+viewingHint: paged
+Text direction: left-to-right
+page title prefix:
+
+# Layer/Choice Defaults
+# Set Layer Type to "Layer" or "Choice"
+Layer Type: Layer
+layer title prefix:
+
+# ARK Minting Credentials
+EZID Username:
+EZID Password:
+ARK Shoulder:
