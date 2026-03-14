@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metadata CSV Generator</title>
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js.yaml.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #1a1a1a;
+    background: #f4f5f7;
+    min-height: 100vh;
+  }
+
+  header {
+    background: #003b5c;
+    color: #fff;
+    padding: 16px 32px;
+  }
+  header h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: 0.01em; }
+  header p  { font-size: 0.85rem; opacity: 0.75; margin-top: 2px; }
+
+  main {
+    max-width: 780px;
+    margin: 32px auto;
+    padding: 0 16px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid #dde1e7;
+    border-radius: 8px;
+    padding: 24px;
+  }
+  .card h2 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+    margin-bottom: 16px;
+  }
+
+  /* Script type tabs */
+  .script-tabs { display: flex; gap: 8px; }
+  .script-tab {
+    padding: 8px 20px;
+    border: 2px solid #dde1e7;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+    transition: all 0.15s;
+  }
+  .script-tab:hover { border-color: #003b5c; color: #003b5c; }
+  .script-tab.active { border-color: #003b5c; background: #003b5c; color: #fff; }
+  .script-desc {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: #6b7280;
+    min-height: 1.5em;
+  }
+
+  /* Config tabs */
+  .config-tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #dde1e7; }
+  .config-tab {
+    padding: 8px 18px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #6b7280;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s;
+  }
+  .config-tab:hover { color: #003b5c; }
+  .config-tab.active { color: #003b5c; border-bottom-color: #003b5c; font-weight: 600; }
+
+  /* Form fields */
+  .field-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 20px;
+    margin-bottom: 20px;
+  }
+  .field-group.single { grid-template-columns: 1fr; }
+  .field-group.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 0.82rem; font-weight: 600; color: #374151; }
+  .field label .req { color: #e53e3e; margin-left: 2px; }
+  .field label .opt { font-weight: 400; color: #9ca3af; font-size: 0.78rem; margin-left: 4px; }
+
+  input[type="text"],
+  input[type="password"],
+  input[type="file"],
+  select,
+  textarea {
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    padding: 7px 10px;
+    font-size: 0.875rem;
+    color: #1a1a1a;
+    background: #fff;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #003b5c;
+    box-shadow: 0 0 0 3px rgba(0,59,92,0.12);
+  }
+  input[type="file"] { padding: 5px 8px; cursor: pointer; }
+  select { cursor: pointer; }
+
+  .hint { font-size: 0.78rem; color: #6b7280; margin-top: 2px; }
+  .hint code { font-family: ui-monospace, monospace; background: #f0f1f3; padding: 1px 4px; border-radius: 3px; }
+
+  /* Section dividers within form */
+  .form-section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #9ca3af;
+    margin: 20px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f0f1f3;
+  }
+  .form-section-label:first-child { margin-top: 0; }
+
+  /* Folder picker */
+  .folder-pick-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .pick-btn {
+    padding: 8px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    background: #f9fafb;
+    cursor: pointer;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .pick-btn:hover { background: #f0f1f3; }
+  .folder-summary { font-size: 0.85rem; color: #374151; }
+  .folder-summary.ok { color: #047857; font-weight: 500; }
+  .folder-summary.empty { color: #9ca3af; }
+  #folder-input { display: none; }
+
+  /* YAML upload area */
+  .yaml-drop {
+    border: 2px dashed #d1d5db;
+    border-radius: 6px;
+    padding: 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .yaml-drop:hover, .yaml-drop.over { border-color: #003b5c; }
+  .yaml-drop p { font-size: 0.875rem; color: #6b7280; }
+  .yaml-drop .yaml-loaded { color: #047857; font-weight: 500; }
+
+  /* EZID section */
+  .ezid-note {
+    font-size: 0.8rem;
+    color: #6b7280;
+    background: #f8f9fa;
+    border-radius: 5px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+  }
+
+  /* Submit */
+  #submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: #003b5c;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  #submit-btn:hover:not(:disabled) { background: #005080; }
+  #submit-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+  /* Status / result */
+  #status {
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 0.875rem;
+    display: none;
+  }
+  #status.error { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; }
+  #status.success { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+  #status.working { background: #eff6ff; border: 1px solid #93c5fd; color: #1d4ed8; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Metadata CSV Generator</h1>
+  <p>UCLA Library Digital Collections</p>
+</header>
+
+<main>
+
+  <!-- 1. Script type -->
+  <div class="card">
+    <h2>Script Type</h2>
+    <div class="script-tabs">
+      <button class="script-tab active" data-script="standard">Standard</button>
+      <button class="script-tab" data-script="multipart">Multipart</button>
+      <button class="script-tab" data-script="layers">Layers</button>
+    </div>
+    <p class="script-desc" id="script-desc"></p>
+  </div>
+
+  <!-- 2. Collection folder -->
+  <div class="card">
+    <h2>Collection Folder</h2>
+    <div class="folder-pick-row">
+      <button class="pick-btn" id="pick-btn">Select folder…</button>
+      <input type="file" id="folder-input" webkitdirectory multiple>
+      <span class="folder-summary empty" id="folder-summary">No folder selected</span>
+    </div>
+    <div class="field">
+      <label for="root-path">
+        Full path to collection folder on your system<span class="req">*</span>
+      </label>
+      <input type="text" id="root-path" placeholder="/Masters/othermasters/my-collection" autocomplete="off">
+      <span class="hint">Include the collection folder itself. E.g. if files are at <code>/Masters/othermasters/my-collection/work1/page001.tif</code>, enter <code>/Masters/othermasters/my-collection</code>.</span>
+    </div>
+  </div>
+
+  <!-- 3. Configuration -->
+  <div class="card">
+    <h2>Configuration</h2>
+
+    <div class="config-tabs">
+      <button class="config-tab active" id="tab-form">Fill in form</button>
+      <button class="config-tab" id="tab-yaml">Upload YAML</button>
+    </div>
+
+    <!-- Form config -->
+    <div id="pane-form">
+
+      <div class="form-section-label">Collection</div>
+      <div class="field-group single">
+        <div class="field">
+          <label for="f-shortcode">Collection Shortcode<span class="req">*</span></label>
+          <input type="text" id="f-shortcode">
+          <span class="hint">Used as the CSV filename prefix. Should be consistent across all batches for this collection.</span>
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="field">
+          <label for="f-title">Collection Title<span class="req">*</span> <span class="opt">new collections only</span></label>
+          <input type="text" id="f-title">
+          <span class="hint">Enter title if creating a new collection. Leave blank if the collection already exists.</span>
+        </div>
+        <div class="field">
+          <label for="f-collection-ark">Collection ARK<span class="req">*</span> <span class="opt">existing collections only</span></label>
+          <input type="text" id="f-collection-ark" placeholder="ark:/21198/…">
+          <span class="hint">Enter ARK if the collection already exists — works will be linked to it and no collection CSV will be generated. Leave blank if creating a new collection.</span>
+        </div>
+      </div>
+
+      <div class="form-section-label">Metadata Defaults</div>
+      <div class="field-group">
+        <div class="field">
+          <label for="f-visibility">Visibility</label>
+          <input type="text" id="f-visibility">
+        </div>
+        <div class="field">
+          <label for="f-genre">Genre</label>
+          <input type="text" id="f-genre">
+        </div>
+        <div class="field">
+          <label for="f-repository">Repository</label>
+          <input type="text" id="f-repository" list="repository-list" autocomplete="off">
+          <datalist id="repository-list">
+            <option value="UCLA Library Special Collections">
+            <option value="UCLA East Asian Library">
+          </datalist>
+          <span class="hint">Select from the list or type a custom value.</span>
+        </div>
+        <div class="field">
+          <label for="f-language">Language</label>
+          <input type="text" id="f-language">
+        </div>
+        <div class="field">
+          <label for="f-date-creation">Date.creation</label>
+          <input type="text" id="f-date-creation">
+        </div>
+        <div class="field">
+          <label for="f-date-normalized">Date.normalized</label>
+          <input type="text" id="f-date-normalized">
+        </div>
+        <div class="field">
+          <label for="f-type">Type.typeOfResource</label>
+          <select id="f-type">
+            <option value="">—</option>
+            <option value="text">text</option>
+            <option value="image">image</option>
+            <option value="cartographic">cartographic</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-rights-status">Rights.copyrightStatus</label>
+          <input type="text" id="f-rights-status" list="rights-list" autocomplete="off">
+          <datalist id="rights-list">
+            <option value="public domain">
+            <option value="copyrighted">
+            <option value="unknown">
+          </datalist>
+          <span class="hint">Select from the list or type a custom value.</span>
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label for="f-rights-contact">Rights.servicesContact</label>
+          <input type="text" id="f-rights-contact">
+        </div>
+      </div>
+
+      <!-- Shared datalist for page prefix (free text allowed) -->
+      <datalist id="page-prefix-list">
+        <option value="Page">
+        <option value="Item">
+        <option value="Image">
+      </datalist>
+
+      <!-- Standard-specific -->
+      <div id="section-standard">
+        <div class="form-section-label">Work &amp; Page Defaults</div>
+        <div class="field-group triple">
+          <div class="field">
+            <label for="f-std-viewing-hint">viewingHint</label>
+            <select id="f-std-viewing-hint"><option value="">—</option><option value="paged">paged</option><option value="continuous">continuous</option></select>
+          </div>
+          <div class="field">
+            <label for="f-std-text-dir">Text direction</label>
+            <select id="f-std-text-dir"><option value="">—</option><option value="right-to-left">right-to-left</option><option value="top-to-bottom">top-to-bottom</option><option value="bottom-to-top">bottom-to-top</option></select>
+          </div>
+          <div class="field">
+            <label for="f-std-page-prefix">page title prefix</label>
+            <input type="text" id="f-std-page-prefix" list="page-prefix-list" autocomplete="off">
+            <span class="hint">Select from the list or type a custom value.</span>
+          </div>
+        </div>
+        <div class="field-group single">
+          <div class="field">
+            <label for="f-std-extensions">File extensions</label>
+            <input type="text" id="f-std-extensions" value=".tif" placeholder=".tif,.jpg">
+            <span class="hint">Comma-separated. Leave blank to include all files.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multipart-specific -->
+      <div id="section-multipart" class="hidden">
+        <div class="form-section-label">Volume &amp; Page Defaults</div>
+        <div class="field-group">
+          <div class="field">
+            <label for="f-mp-viewing-hint">viewingHint</label>
+            <select id="f-mp-viewing-hint"><option value="">—</option><option value="paged">paged</option><option value="continuous">continuous</option></select>
+          </div>
+          <div class="field">
+            <label for="f-mp-text-dir">Text direction</label>
+            <select id="f-mp-text-dir"><option value="">—</option><option value="right-to-left">right-to-left</option><option value="top-to-bottom">top-to-bottom</option><option value="bottom-to-top">bottom-to-top</option></select>
+          </div>
+          <div class="field">
+            <label for="f-mp-vol-prefix">vol title prefix</label>
+            <input type="text" id="f-mp-vol-prefix" placeholder="e.g. Volume">
+          </div>
+          <div class="field">
+            <label for="f-mp-page-prefix">page title prefix</label>
+            <input type="text" id="f-mp-page-prefix" list="page-prefix-list" autocomplete="off">
+            <span class="hint">Select from the list or type a custom value.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layers-specific -->
+      <div id="section-layers" class="hidden">
+        <div class="form-section-label">Page &amp; Layer Defaults</div>
+        <div class="field-group">
+          <div class="field">
+            <label for="f-ly-viewing-hint">viewingHint</label>
+            <select id="f-ly-viewing-hint"><option value="">—</option><option value="paged">paged</option><option value="continuous">continuous</option></select>
+          </div>
+          <div class="field">
+            <label for="f-ly-text-dir">Text direction</label>
+            <select id="f-ly-text-dir"><option value="">—</option><option value="right-to-left">right-to-left</option><option value="top-to-bottom">top-to-bottom</option><option value="bottom-to-top">bottom-to-top</option></select>
+          </div>
+          <div class="field">
+            <label for="f-ly-page-prefix">page title prefix</label>
+            <input type="text" id="f-ly-page-prefix" list="page-prefix-list" autocomplete="off">
+            <span class="hint">Select from the list or type a custom value.</span>
+          </div>
+          <div class="field">
+            <label for="f-ly-layer-type">Layer Type</label>
+            <select id="f-ly-layer-type">
+              <option value="Choice">Choice</option>
+              <option value="Layer">Layer</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-ly-layer-prefix">layer title prefix</label>
+            <input type="text" id="f-ly-layer-prefix" placeholder="e.g. Layer">
+          </div>
+          <div class="field">
+            <label for="f-ly-extensions">File extensions</label>
+            <input type="text" id="f-ly-extensions" value=".tif" placeholder=".tif,.jpg">
+            <span class="hint">Comma-separated. Leave blank to include all files.</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-form -->
+
+    <!-- YAML config -->
+    <div id="pane-yaml" class="hidden">
+      <div class="yaml-drop" id="yaml-drop">
+        <p id="yaml-drop-text">Drop an <strong>inputs.yml</strong> file here, or click to browse</p>
+        <input type="file" id="yaml-file-input" accept=".yml,.yaml" style="display:none">
+      </div>
+      <p class="hint" style="margin-top:8px">
+        Fields parsed from the YAML will populate the form. EZID credentials in the YAML will also be used.
+      </p>
+    </div>
+
+  </div><!-- /config card -->
+
+  <!-- 4. EZID Credentials -->
+  <div class="card">
+    <h2>EZID Credentials</h2>
+    <p class="ezid-note">
+      Credentials are used only for this request and are never stored.
+      Leave blank to generate placeholder ARKs (useful for testing).
+    </p>
+    <div class="field-group triple">
+      <div class="field">
+        <label for="f-ezid-user">EZID Username</label>
+        <input type="text" id="f-ezid-user" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-ezid-pass">EZID Password</label>
+        <input type="password" id="f-ezid-pass" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-ark-shoulder">ARK Shoulder</label>
+        <input type="text" id="f-ark-shoulder" placeholder="e.g. ark:/21198/z1">
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <button id="submit-btn">Generate CSVs</button>
+  <div id="status"></div>
+
+</main>
+
+<script>
+// ── Script type ──────────────────────────────────────────────────────────────
+const SCRIPT_DESCS = {
+  standard:  "Auto-detects structure: image files at root (simple works), work subfolders (complex works + pages), or a mix of both.",
+  multipart: "Four-level hierarchy: Collection → Multipart works → Volumes → Pages.",
+  layers:    "For IIIF Choice/Layers: Collection → Works → Pages → Layer files.",
+};
+
+let currentScript = "standard";
+
+document.querySelectorAll(".script-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".script-tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentScript = btn.dataset.script;
+    document.getElementById("script-desc").textContent = SCRIPT_DESCS[currentScript];
+    ["standard","multipart","layers"].forEach(s => {
+      document.getElementById(`section-${s}`).classList.toggle("hidden", s !== currentScript);
+    });
+  });
+});
+// Set initial description
+document.getElementById("script-desc").textContent = SCRIPT_DESCS[currentScript];
+
+
+// ── Folder picker ────────────────────────────────────────────────────────────
+let fileTree = [];
+
+document.getElementById("pick-btn").addEventListener("click", () => {
+  document.getElementById("folder-input").click();
+});
+
+document.getElementById("folder-input").addEventListener("change", e => {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+
+  // webkitRelativePath = "folderName/sub/file.tif" — strip first segment
+  fileTree = files.map(f => {
+    const parts = f.webkitRelativePath.split("/");
+    return parts.slice(1).join("/");
+  }).filter(p => p.length > 0);
+
+  // Suggest root path hint from folder name
+  const folderName = files[0].webkitRelativePath.split("/")[0];
+  const rootInput = document.getElementById("root-path");
+  if (!rootInput.value) rootInput.placeholder = `…/${folderName}`;
+
+  // Summary
+  const topLevelDirs = new Set(fileTree.filter(p => p.includes("/")).map(p => p.split("/")[0]));
+  const summary = document.getElementById("folder-summary");
+  const dirPart = topLevelDirs.size > 0
+    ? ` across ${topLevelDirs.size} top-level folder${topLevelDirs.size !== 1 ? "s" : ""}`
+    : " (flat — no subfolders)";
+  summary.textContent = `${folderName}/ — ${files.length.toLocaleString()} file${files.length !== 1 ? "s" : ""}${dirPart}`;
+  summary.className = "folder-summary ok";
+});
+
+
+// ── Config tabs ──────────────────────────────────────────────────────────────
+document.getElementById("tab-form").addEventListener("click", () => switchConfigTab("form"));
+document.getElementById("tab-yaml").addEventListener("click", () => switchConfigTab("yaml"));
+
+function switchConfigTab(tab) {
+  ["form","yaml"].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle("active", t === tab);
+    document.getElementById(`pane-${t}`).classList.toggle("hidden", t !== tab);
+  });
+}
+
+
+// ── YAML upload ──────────────────────────────────────────────────────────────
+const yamlDrop = document.getElementById("yaml-drop");
+const yamlFileInput = document.getElementById("yaml-file-input");
+
+yamlDrop.addEventListener("click", () => yamlFileInput.click());
+
+yamlDrop.addEventListener("dragover", e => { e.preventDefault(); yamlDrop.classList.add("over"); });
+yamlDrop.addEventListener("dragleave", () => yamlDrop.classList.remove("over"));
+yamlDrop.addEventListener("drop", e => {
+  e.preventDefault();
+  yamlDrop.classList.remove("over");
+  const file = e.dataTransfer.files[0];
+  if (file) loadYaml(file);
+});
+
+yamlFileInput.addEventListener("change", e => {
+  if (e.target.files[0]) loadYaml(e.target.files[0]);
+});
+
+function loadYaml(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = jsyaml.load(ev.target.result);
+      populateFormFromYaml(data);
+      document.getElementById("yaml-drop-text").innerHTML =
+        `<span class="yaml-loaded">✓ Loaded: ${file.name}</span>`;
+      // Switch to form view so user can review/edit
+      switchConfigTab("form");
+    } catch(err) {
+      showStatus("error", `YAML parse error: ${err.message}`);
+    }
+  };
+  reader.readAsText(file);
+}
+
+const YAML_TO_FIELD = {
+  "Collection Title":         "f-title",
+  "Collection Shortcode":     "f-shortcode",
+  "Collection ARK":           "f-collection-ark",
+  "Visibility":               "f-visibility",
+  "Genre":                    "f-genre",
+  "Repository":               "f-repository",
+  "Language":                 "f-language",
+  "Date.creation":            "f-date-creation",
+  "Date.normalized":          "f-date-normalized",
+  "Type.typeOfResource":      "f-type",
+  "Rights.copyrightStatus":   "f-rights-status",
+  "Rights.servicesContact":   "f-rights-contact",
+  // standard
+  "viewingHint":              ["f-std-viewing-hint","f-mp-viewing-hint","f-ly-viewing-hint"],
+  "Text direction":           ["f-std-text-dir","f-mp-text-dir","f-ly-text-dir"],
+  "page title prefix":        ["f-std-page-prefix","f-mp-page-prefix","f-ly-page-prefix"],
+  "file extensions":          ["f-std-extensions","f-ly-extensions"],
+  // multipart
+  "vol title prefix":         "f-mp-vol-prefix",
+  // layers
+  "Layer Type":               "f-ly-layer-type",
+  "layer title prefix":       "f-ly-layer-prefix",
+  // EZID
+  "EZID Username":            "f-ezid-user",
+  "EZID Password":            "f-ezid-pass",
+  "ARK Shoulder":             "f-ark-shoulder",
+};
+
+function populateFormFromYaml(data) {
+  for (const [key, ids] of Object.entries(YAML_TO_FIELD)) {
+    const val = data[key];
+    if (val === undefined || val === null) continue;
+    const targets = Array.isArray(ids) ? ids : [ids];
+    targets.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = String(val);
+    });
+  }
+}
+
+
+// ── Build config dict from form ───────────────────────────────────────────────
+function buildConfig() {
+  const v = id => (document.getElementById(id)?.value || "").trim() || null;
+
+  const common = {
+    "Collection Title":        v("f-title"),
+    "Collection Shortcode":    v("f-shortcode"),
+    "Collection ARK":          v("f-collection-ark"),
+    "Visibility":              v("f-visibility"),
+    "Genre":                   v("f-genre"),
+    "Repository":              v("f-repository"),
+    "Date.creation":           v("f-date-creation"),
+    "Date.normalized":         v("f-date-normalized"),
+    "Type.typeOfResource":     v("f-type"),
+    "Rights.copyrightStatus":  v("f-rights-status"),
+    "Rights.servicesContact":  v("f-rights-contact"),
+    "Language":                v("f-language"),
+    "EZID Username":           v("f-ezid-user"),
+    "EZID Password":           v("f-ezid-pass"),
+    "ARK Shoulder":            v("f-ark-shoulder"),
+  };
+
+  if (currentScript === "standard") {
+    return { ...common,
+      "viewingHint":      v("f-std-viewing-hint"),
+      "Text direction":   v("f-std-text-dir"),
+      "page title prefix": v("f-std-page-prefix"),
+      "file extensions":  v("f-std-extensions"),
+    };
+  }
+  if (currentScript === "multipart") {
+    return { ...common,
+      "viewingHint":      v("f-mp-viewing-hint"),
+      "Text direction":   v("f-mp-text-dir"),
+      "vol title prefix": v("f-mp-vol-prefix"),
+      "page title prefix": v("f-mp-page-prefix"),
+    };
+  }
+  if (currentScript === "layers") {
+    return { ...common,
+      "viewingHint":       v("f-ly-viewing-hint"),
+      "Text direction":    v("f-ly-text-dir"),
+      "page title prefix": v("f-ly-page-prefix"),
+      "Layer Type":        document.getElementById("f-ly-layer-type")?.value || "Layer",
+      "layer title prefix": v("f-ly-layer-prefix"),
+      "file extensions":   v("f-ly-extensions"),
+    };
+  }
+}
+
+
+// ── Submit ───────────────────────────────────────────────────────────────────
+document.getElementById("submit-btn").addEventListener("click", async () => {
+  const rootPath = document.getElementById("root-path").value.trim().replace(/\\/g, "/");
+  const config = buildConfig();
+
+  if (!fileTree.length)               { showStatus("error", "Please select a collection folder first."); return; }
+  if (!rootPath)                       { showStatus("error", "Please enter the full path to your collection folder."); return; }
+  if (!config["Collection Shortcode"]) { showStatus("error", "Collection Shortcode is required."); return; }
+  if (!config["Collection Title"] && !config["Collection ARK"]) {
+    showStatus("error", "Enter a Collection Title (new collection) or Collection ARK (existing collection)."); return;
+  }
+  if (config["Collection Title"] && config["Collection ARK"]) {
+    showStatus("error", "Enter either a Collection Title or a Collection ARK — not both."); return;
+  }
+
+  const btn = document.getElementById("submit-btn");
+  btn.disabled = true;
+  showStatus("working", "Generating CSVs…");
+
+  try {
+    const resp = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        script: currentScript,
+        root_path: rootPath,
+        tree: fileTree,
+        config: config,
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+      throw new Error(err.detail || resp.statusText);
+    }
+
+    const blob = await resp.blob();
+    const prefix = config["Collection Shortcode"] || config["Collection Title"] || "output";
+    const filename = `${prefix}-csvs.zip`;
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    showStatus("success", `✓ Done — downloading ${filename}`);
+  } catch(err) {
+    showStatus("error", `Error: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function showStatus(type, msg) {
+  const el = document.getElementById("status");
+  el.className = type;
+  el.textContent = msg;
+  el.style.display = "block";
+}
+</script>
+
+</body>
+</html>

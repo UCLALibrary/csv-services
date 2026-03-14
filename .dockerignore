@@ -1,0 +1,9 @@
+.git
+.github
+.claude
+*.md
+*.yml
+!web/requirements.txt
+multipart/
+standard/
+layers/

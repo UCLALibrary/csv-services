@@ -1,0 +1,9 @@
+services:
+  app:
+    image: ghcr.io/uclalibrary/multipart:latest
+    build:
+      context: ..
+      dockerfile: web/Dockerfile
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
