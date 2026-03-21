@@ -1,6 +1,6 @@
 # Digital Collections CSV Services
 
-Tools for generating CSVs for digital collections ingest. Available as a hosted web app or as local command-line scripts.
+Tools for generating CSVs for digital collections processing and ingest. Available as a hosted web app or as local command-line scripts.
 
 ---
 
@@ -101,6 +101,6 @@ If the collection already has an ARK, enter it in the **Collection ARK** field. 
 
 ---
 
-## Local Scripts
+## Using Local Scripts
 
 For installation and usage instructions, see the [main branch README](https://github.com/UCLALibrary/csv-services/blob/main/README.md).
