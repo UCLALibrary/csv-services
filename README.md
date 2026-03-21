@@ -4,7 +4,7 @@ Tools for generating CSVs for digital collections ingest. Available as a hosted 
 
 ---
 
-## Option 1: Web App
+## Web App
 
 Use the hosted app at **https://digital-collections-csv-services.onrender.com/**
 
@@ -49,34 +49,58 @@ collection/
 
 ---
 
-## Option 2: Local Scripts
+## Form Fields
 
-### Installation
+### Collection folder
+The full path to the collection folder on your system (e.g. `Masters/dlmasters/my-collection`). Include the collection folder itself, not just its parent.
 
-```
-git clone git@github.com:UCLALibrary/multipart.git
-cd multipart
-python -m venv ENV
-source ENV/bin/activate
-pip install -r requirements.txt
-```
+### Collection
+- **Collection Shortcode** — Short identifier used as the CSV filename prefix. Should be consistent across all batches for the same collection.
+- **Collection Title** — Display title. Required for new collections; leave blank if the collection already exists.
+- **Collection ARK** — Required if the collection already exists. Works will be linked to it and no collection CSV will be generated. Leave blank if creating a new collection.
 
-### Usage
+### Metadata Defaults
+These values are applied to all works in the collection. All fields are optional.
 
-1. Run the script for your collection type, passing the path to the collection folder:
+`Visibility` `Genre` `Repository` `Language` `Date.creation` `Date.normalized` `Type.typeOfResource` `Rights.copyrightStatus` `Rights.servicesContact`
 
-    ```
-    python standard/standard.py path/to/collection
-    python multipart/multipart.py path/to/collection
-    python layers/layers.py path/to/collection
-    ```
+### Type-specific defaults
 
-2. The script will prompt for an output directory where `inputs.yml` and the generated CSVs will be saved.
+**Standard — Work & Page Defaults**
+- `viewingHint` — e.g. `paged` or `continuous`
+- `Text direction`
+- `page title prefix` — e.g. `Page` produces "Page 1", "Page 2", …
+- `File extensions` — comma-separated (e.g. `.tif,.jpg`); leave blank to include all files
 
-3. On the first run, an `inputs.yml` template is written to the output directory. Open it and fill in the collection metadata and any EZID credentials for ARK minting.
+**Multipart — Volume & Page Defaults**
+- `viewingHint`, `Text direction`
+- `vol title prefix` — e.g. `Volume` produces "Volume 1", "Volume 2", …
+- `page title prefix`
 
-    ```
-    vim path/to/output/inputs.yml
-    ```
+**Layers — Page & Layer Defaults**
+- `viewingHint`, `Text direction`
+- `page title prefix`
+- `Layer Type` — `Choice` or `Layer`
+- `layer title prefix` — e.g. `Layer` produces "Layer 1", "Layer 2", …
+- `File extensions`
 
-4. Run the script again. It will use the values from `inputs.yml` to generate the CSVs.
+### Importing an existing inputs.yml
+You can drag and drop an `inputs.yml` file onto the form to pre-populate the fields. EZID credentials in the file will also be applied.
+
+---
+
+## ARK Minting
+
+EZID credentials are optional. Without them, the scripts generate placeholder ARKs in the format `ark:/FAKE/...`, which is useful for testing and reviewing the CSV structure before a real ingest run.
+
+When credentials are provided, the script mints a real ARK via EZID for each collection, work, volume (Multipart), and page (Layers). ARKs for items that carry an image file path — pages in Standard and Multipart, and layers in Layers — are derived locally by appending a NOID qualifier to their parent ARK, with no additional EZID call.
+
+If the collection already has an ARK, enter it in the **Collection ARK** field. The collection CSV will be skipped and works will be linked to the existing collection.
+
+**EZID Credentials** — `EZID Username`, `EZID Password`, `ARK Shoulder` (e.g. `ark:/21198/z1`). Credentials are used only for the current request and are never stored.
+
+---
+
+## Local Scripts
+
+For installation and usage instructions, see the [main branch README](https://github.com/UCLALibrary/multipart/blob/main/README.md).
