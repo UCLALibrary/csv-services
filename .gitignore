@@ -161,3 +161,8 @@ cython_debug/
 
 
 *.tif
+
+.DS_Store
+
+# CSV exports
+ exports/

@@ -1,0 +1,28 @@
+
+Collection Title: Test Collection
+Collection Shortcode: testcoll
+Collection ARK:
+
+# Collection and Work Defaults
+Visibility: vtest
+Genre: gtest
+Repository: rtest
+Date.creation: dctest
+Date.normalized: dntest
+Type.typeOfResource: ttest
+Rights.copyrightStatus: rctest
+Rights.servicesContact: rstest
+Language: ltest
+
+# Work Display Defaults
+viewingHint: paged
+Text direction: left-to-right
+
+# Page Defaults (complex works only)
+page title prefix:
+file extensions: .tif
+
+# ARK Minting Credentials
+EZID Username:
+EZID Password:
+ARK Shoulder:
