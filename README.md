@@ -103,4 +103,4 @@ If the collection already has an ARK, enter it in the **Collection ARK** field. 
 
 ## Local Scripts
 
-For installation and usage instructions, see the [main branch README](https://github.com/UCLALibrary/multipart/blob/main/README.md).
+For installation and usage instructions, see the [main branch README](https://github.com/UCLALibrary/csv-services/blob/main/README.md).

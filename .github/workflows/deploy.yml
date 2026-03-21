@@ -33,4 +33,4 @@ jobs:
           context: .
           file: web/Dockerfile
           push: true
-          tags: ghcr.io/uclalibrary/multipart:latest
+          tags: ghcr.io/uclalibrary/csv-services:latest
