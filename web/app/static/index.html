@@ -222,7 +222,7 @@
 
   <!-- 1. Script type -->
   <div class="card">
-    <h2>Script Type</h2>
+    <h2>Collection Type</h2>
     <div class="script-tabs">
       <button class="script-tab active" data-script="standard">Standard</button>
       <button class="script-tab" data-script="multipart">Multipart</button>
@@ -478,7 +478,7 @@
 <script>
 // ── Script type ──────────────────────────────────────────────────────────────
 const SCRIPT_DESCS = {
-  standard:  "Auto-detects structure: image files at root (simple works), work subfolders (complex works + pages), or a mix of both.",
+  standard:  "Auto-detects structure: image files at root (simple works), work subfolders (complex works + pages), or a mix of both (expects folders named 'simple' and 'complex' at the collection or batch root).",
   multipart: "Four-level hierarchy: Collection → Multipart works → Volumes → Pages.",
   layers:    "For IIIF Choice/Layers: Collection → Works → Pages → Layer files.",
 };
