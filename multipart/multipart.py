@@ -70,10 +70,11 @@ MULTI_HEADERS = COLLECTION_HEADERS + [
     "viewingHint"
 ]
 
-VOL_HEADERS = [
+VOL_DEFAULTS_KEYS = [
     "viewingHint",
     "Text direction"
 ]
+VOL_HEADERS = VOL_DEFAULTS_KEYS + ["Item Sequence"]
 
 PAGE_HEADERS = [
     "Item Sequence"
@@ -155,7 +156,7 @@ def get_inputs(output_dir):
         collection_ark = defaults.pop("Collection ARK")
         vol_prefix = defaults.pop("vol title prefix")
         page_prefix = defaults.pop("page title prefix")
-        vol_defaults = {k:defaults.pop(k) for k in VOL_HEADERS}
+        vol_defaults = {k:defaults.pop(k) for k in VOL_DEFAULTS_KEYS}
         ezid_user = defaults.pop("EZID Username")
         ezid_password = defaults.pop("EZID Password")
         ark_shoulder = defaults.pop("ARK Shoulder")
@@ -215,13 +216,14 @@ def process_level2(root, file_prefix, works, vol_pre, vol_def, ezid_user, ezid_p
         writer.writeheader()
         for work, work_ark in works:
             dirs = sorted([dir for dir in os.scandir(work.path) if dir.is_dir()], key=lambda x:x.name)
-            for dir in dirs:
+            for seq, dir in enumerate(dirs, start=1):
                 ark = get_ark(ezid_user, ezid_password, ark_shoulder)
                 data = {
                     "Item ARK": ark,
                     "Parent ARK": work_ark,
                     "Object Type": "Work",
-                    "Title": f"{vol_pre} {dir.name}"
+                    "Title": f"{vol_pre} {seq}".strip() if vol_pre else dir.name,
+                    "Item Sequence": seq,
                 }
                 data.update(vol_def)
                 writer.writerow(data)
