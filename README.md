@@ -64,3 +64,22 @@ EZID credentials are optional. Without them, the scripts generate placeholder AR
 When credentials are provided, the script mints a real ARK via EZID for each Collection, Multipart Work, Work, and Page (when there are Layers). ARKs for rows that carry an image file path — Object Types "Page" in Standard and Multipart, and "Layer" in Layers — are derived locally by appending a NOID qualifier to their parent ARK, with no additional EZID call.
 
 If the collection already has an ARK, enter it under `Collection ARK` in `inputs.yml`. The collection CSV will be skipped and works will be linked to the existing collection. You do not need to enter a Collection Title if the collection already exists.
+
+## Additional Services
+
+### Image Dimensions
+
+After images have been uploaded to the IIIF image service, use this script to fetch height and width values and write them back into the CSV.
+```
+python dimensions/dimensions.py path/to/input.csv
+```
+
+The script will prompt for an output directory. The updated CSV is written there with the same filename as the input.
+
+**Requirements:**
+- The CSV must have a `IIIF Access URL` column containing base IIIF image URLs
+- Rows that already have both `height` and `width` values are skipped
+- Rows with no `IIIF Access URL` are skipped
+- A summary of fetched, skipped, or failed rows is printed when done
+
+Re-running against the same CSV is safe as existing dimensions are preserved and only missing values are fetched.
