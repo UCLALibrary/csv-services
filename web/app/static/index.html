@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Metadata CSV Generator</title>
+<title>Digital Collections CSV Services</title>
 <script src="https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js.yaml.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -21,9 +21,25 @@
     background: #003b5c;
     color: #fff;
     padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
   header h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: 0.01em; }
   header p  { font-size: 0.85rem; opacity: 0.75; margin-top: 2px; }
+
+  nav { display: flex; gap: 4px; }
+  nav a {
+    padding: 6px 14px;
+    border-radius: 5px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  nav a:hover { color: #fff; background: rgba(255,255,255,0.1); }
+  nav a.active { color: #fff; background: rgba(255,255,255,0.18); }
 
   main {
     max-width: 780px;
@@ -203,8 +219,9 @@
     padding: 12px 16px;
     font-size: 0.875rem;
     display: none;
+    margin-top: 12px;
   }
-  #status.error { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; }
+  #status.error   { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; }
   #status.success { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
   #status.working { background: #eff6ff; border: 1px solid #93c5fd; color: #1d4ed8; }
 
@@ -214,22 +231,31 @@
 <body>
 
 <header>
-  <h1>Metadata CSV Generator</h1>
-  <p>UCLA Library Digital Collections</p>
+  <div>
+    <h1>Digital Collections CSV Services</h1>
+    <p>UCLA Library Digital Collections</p>
+  </div>
+  <nav>
+    <a href="index.html" class="active">Generate CSVs</a>
+    <a href="services.html">Additional CSV Services</a>
+  </nav>
 </header>
 
 <main>
 
-  <!-- 1. Script type -->
+  <!-- 1. Collection Type -->
   <div class="card">
     <h2>Collection Type</h2>
     <div class="script-tabs">
-      <button class="script-tab active" data-script="standard">Standard</button>
+      <button class="script-tab" data-script="standard">Standard</button>
       <button class="script-tab" data-script="multipart">Multipart</button>
       <button class="script-tab" data-script="layers">Layers</button>
     </div>
-    <p class="script-desc" id="script-desc"></p>
+    <p class="script-desc" id="script-desc">Select a collection type to get started.</p>
   </div>
+
+  <!-- Expanded form (hidden until a collection type is chosen) -->
+  <div id="generate-form" class="hidden">
 
   <!-- 2. Collection folder -->
   <div class="card">
@@ -473,10 +499,12 @@
   <button id="submit-btn">Generate CSVs</button>
   <div id="status"></div>
 
+  </div><!-- /generate-form -->
+
 </main>
 
 <script>
-// ── Script type ──────────────────────────────────────────────────────────────
+// ── Collection type tabs ──────────────────────────────────────────────────────
 const SCRIPT_DESCS = {
   standard:  "Auto-detects structure: image files at root (simple works), work subfolders (complex works + pages), or a mix of both (expects folders named 'simple' and 'complex' at the collection or batch root).",
   multipart: "Four-level hierarchy: Collection → Multipart works → Volumes → Pages.",
@@ -485,19 +513,23 @@ const SCRIPT_DESCS = {
 
 let currentScript = "standard";
 
-document.querySelectorAll(".script-tab").forEach(btn => {
+document.querySelectorAll("[data-script]").forEach(btn => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".script-tab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll("[data-script]").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     currentScript = btn.dataset.script;
     document.getElementById("script-desc").textContent = SCRIPT_DESCS[currentScript];
+    document.getElementById("generate-form").classList.remove("hidden");
     ["standard","multipart","layers"].forEach(s => {
       document.getElementById(`section-${s}`).classList.toggle("hidden", s !== currentScript);
     });
   });
 });
-// Set initial description
-document.getElementById("script-desc").textContent = SCRIPT_DESCS[currentScript];
+
+// Initialize with Standard selected
+document.querySelector("[data-script='standard']").classList.add("active");
+document.getElementById("script-desc").textContent = SCRIPT_DESCS["standard"];
+document.getElementById("generate-form").classList.remove("hidden");
 
 
 // ── Folder picker ────────────────────────────────────────────────────────────
@@ -680,7 +712,8 @@ document.getElementById("submit-btn").addEventListener("click", async () => {
   const rootPath = document.getElementById("root-path").value.trim().replace(/\\/g, "/");
   const config = buildConfig();
 
-  if (!fileTree.length)               { showStatus("error", "Please select a collection folder first."); return; }
+  if (!currentScript)                  { showStatus("error", "Please select a collection type first."); return; }
+  if (!fileTree.length)                { showStatus("error", "Please select a collection folder first."); return; }
   if (!rootPath)                       { showStatus("error", "Please enter the full path to your collection folder."); return; }
   if (!config["Collection Shortcode"]) { showStatus("error", "Collection Shortcode is required."); return; }
   if (!config["Collection Title"] && !config["Collection ARK"]) {
