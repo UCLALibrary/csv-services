@@ -1,85 +1,124 @@
 # Digital Collections CSV Services
 
-Scripts for generating CSVs for digital collections processing and ingest.
+Tools for generating and enriching CSVs for digital collections processing and ingest. Available as a hosted web app or as local command-line scripts.
 
-> A hosted web app is also available at **https://digital-collections-csv-services.onrender.com/** — see the [webapp README](https://github.com/UCLALibrary/csv-services/blob/webapp/README.md) for more information.
+---
 
-## Installation
+## Web App
+
+Use the hosted app at **https://digital-collections-csv-services.onrender.com/**
+
+### Generate CSVs
+
+#### Collection Types
+
+#### Standard
+Auto-detects the folder structure of your collection:
+
+- **Simple** — Image files are directly inside the collection root (one level deep)
+- **Complex** — Work subfolders are inside the collection root, each containing image files
+- **Mixed** — Both simple and complex works in the same collection; expects folders named `simple` and `complex` at the collection or batch root
+
+#### Multipart
+Four-level hierarchy for multipart works:
 
 ```
-git clone git@github.com:UCLALibrary/csv-services.git
-cd csv-services
-python -m venv ENV
-source ENV/bin/activate
-pip install -r requirements.txt
+collection/
+  work1/
+    vol1/
+      page001.tif
+      page002.tif
+    vol2/
+      ...
+  work2/
+    ...
 ```
 
-## Usage
+#### Layers
+For IIIF Choice/Layers — four-level hierarchy:
 
-1. Run the script for your collection type, passing the path to the collection folder:
+```
+collection/
+  work1/
+    page1/
+      layer1.tif
+      layer2.tif
+    page2/
+      ...
+  work2/
+    ...
+```
 
-    ```
-    python standard/standard.py path/to/collection
-    python multipart/multipart.py path/to/collection
-    python layers/layers.py path/to/collection
-    ```
+### Additional Services
 
-2. The script will prompt for an output directory where `inputs.yml` and the generated CSVs will be saved.
+#### Image Dimensions
 
-3. On the first run, an `inputs.yml` template is written to the output directory. Open it and fill in the collection metadata and any EZID credentials for ARK minting.
+Upload a CSV with a `IIIF Access URL` column. The service fetches height and width from each image's `info.json` endpoint and writes them back to the CSV. Rows that already have both values are skipped.
 
-    ```
-    vim path/to/output/inputs.yml
-    ```
+Use this after CSVs have been generated and images have been uploaded to your IIIF image service.
 
-4. Run the script again. It will use the values from `inputs.yml` to generate the CSVs.
+---
 
-## inputs.yml
+## Form Fields
 
-The `inputs.yml` template is generated automatically on the first run. It has the following sections:
+### Collection folder
+The full path to the collection folder on your system (e.g. `Masters/dlmasters/my-collection`). Include the collection folder itself, not just its parent.
 
-**Collection**
-- `Collection Title` — display title for the collection
-- `Collection Shortcode` — short identifier used as the CSV filename prefix
-- `Collection ARK` — leave blank to generate a new ARK; if the collection already exists, enter its ARK here and no collection CSV will be generated
+### Collection
+- **Collection Shortcode** — Short identifier used as the CSV filename prefix. Should be consistent across all batches for the same collection.
+- **Collection Title** — Display title. Required for new collections; leave blank if the collection already exists.
+- **Collection ARK** — Required if the collection already exists. Works will be linked to it and no collection CSV will be generated. Leave blank if creating a new collection.
 
-**Collection and Work Defaults** — metadata applied to all works in the collection:
-`Visibility`, `Genre`, `Repository`, `Date.creation`, `Date.normalized`, `Type.typeOfResource`, `Rights.copyrightStatus`, `Rights.servicesContact`, `Language`
+### Metadata Defaults
+These values are applied to all works in the collection. All fields are optional.
 
-**Work Display Defaults**
+`Visibility` `Genre` `Repository` `Language` `Date.creation` `Date.normalized` `Type.typeOfResource` `Rights.copyrightStatus` `Rights.servicesContact`
+
+### Type-specific defaults
+
+**Standard — Work & Page Defaults**
 - `viewingHint` — e.g. `paged` or `continuous`
 - `Text direction`
+- `page title prefix` — e.g. `Page` produces "Page 1", "Page 2", …
+- `File extensions` — comma-separated (e.g. `.tif,.jpg`); leave blank to include all files
 
-**Page Defaults**
-- `page title prefix` — e.g. `Page` (produces "Page 1", "Page 2", …)
-- `file extensions` — comma-separated list of extensions to include (e.g. `.tif,.jpg`); leave blank to include all files
+**Multipart — Volume & Page Defaults**
+- `viewingHint`, `Text direction`
+- `vol title prefix` — e.g. `Volume` produces "Volume 1", "Volume 2", …
+- `page title prefix`
 
-**ARK Minting Credentials**
-- `EZID Username`, `EZID Password`, `ARK Shoulder` — see below
+**Layers — Page & Layer Defaults**
+- `viewingHint`, `Text direction`
+- `page title prefix`
+- `Layer Type` — `Choice` or `Layer`
+- `layer title prefix` — e.g. `Layer` produces "Layer 1", "Layer 2", …
+- `File extensions`
+
+### Importing an existing inputs.yml
+You can drag and drop an `inputs.yml` file onto the form to pre-populate the fields. EZID credentials in the file will also be applied.
+
+---
 
 ## ARK Minting
 
 EZID credentials are optional. Without them, the scripts generate placeholder ARKs in the format `ark:/FAKE/...`, which is useful for testing and reviewing the CSV structure before a real ingest run.
 
-When credentials are provided, the script mints a real ARK via EZID for each Collection, Multipart Work, Work, and Page (when there are Layers). ARKs for rows that carry an image file path — Object Types "Page" in Standard and Multipart, and "Layer" in Layers — are derived locally by appending a NOID qualifier to their parent ARK, with no additional EZID call.
+When credentials are provided, the script mints a real ARK via EZID for each collection, work, volume (Multipart), and page (Layers). ARKs for items that carry an image file path — pages in Standard and Multipart, and layers in Layers — are derived locally by appending a NOID qualifier to their parent ARK, with no additional EZID call.
 
-If the collection already has an ARK, enter it under `Collection ARK` in `inputs.yml`. The collection CSV will be skipped and works will be linked to the existing collection. You do not need to enter a Collection Title if the collection already exists.
+If the collection already has an ARK, enter it in the **Collection ARK** field. The collection CSV will be skipped and works will be linked to the existing collection.
 
-## Additional Services
+**EZID Credentials** — `EZID Username`, `EZID Password`, `ARK Shoulder` (e.g. `ark:/21198/z1`). Credentials are used only for the current request and are never stored.
+
+---
+
+## Using Local Scripts
+
+For installation and usage instructions, see the [main branch README](https://github.com/UCLALibrary/csv-services/blob/main/README.md).
 
 ### Image Dimensions
 
-After images have been uploaded to the IIIF image service, use this script to fetch height and width values and write them back into the CSV.
 ```
-python dimensions/dimensions.py path/to/input.csv
+python dimensions/dimensions.py input.csv
 ```
 
-The script will prompt for an output directory. The updated CSV is written there with the same filename as the input.
-
-**Requirements:**
-- The CSV must have a `IIIF Access URL` column containing base IIIF image URLs
-- Rows that already have both `height` and `width` values are skipped
-- Rows with no `IIIF Access URL` are skipped
-- A summary of fetched, skipped, or failed rows is printed when done
-
-Re-running against the same CSV is safe as existing dimensions are preserved and only missing values are fetched.
+Prompts for an output directory and writes the updated CSV there. Requires a `IIIF Access URL` column in the input CSV.

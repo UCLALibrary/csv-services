@@ -19,8 +19,8 @@ import urllib.error
 import urllib.request
 
 SOURCE_COL = "IIIF Access URL"
-HEIGHT_COL = "height"
-WIDTH_COL = "width"
+HEIGHT_COL = "media.height"
+WIDTH_COL = "media.width"
 
 
 def get_output_directory():
