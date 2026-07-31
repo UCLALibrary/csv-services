@@ -318,15 +318,6 @@
           <input type="text" id="f-genre">
         </div>
         <div class="field">
-          <label for="f-repository">Repository</label>
-          <input type="text" id="f-repository" list="repository-list" autocomplete="off">
-          <datalist id="repository-list">
-            <option value="UCLA Library Special Collections">
-            <option value="UCLA East Asian Library">
-          </datalist>
-          <span class="hint">Select from the list or type a custom value.</span>
-        </div>
-        <div class="field">
           <label for="f-language">Language</label>
           <input type="text" id="f-language">
         </div>
@@ -354,6 +345,26 @@
             <option value="public domain">
             <option value="copyrighted">
             <option value="unknown">
+          </datalist>
+          <span class="hint">Select from the list or type a custom value.</span>
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label for="f-repository">Repository</label>
+          <input type="text" id="f-repository" list="repository-list" autocomplete="off">
+          <datalist id="repository-list">
+            <option value="University of California, Los Angeles. Library. Department of Special Collections">
+            <option value="Richard C. Rudolph East Asian Library, UCLA">
+            <option value="American Research Center in Egypt"></option>
+          </datalist>
+          <span class="hint">Select from the list or type a custom value.</span>
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label for="f-program">Program</label>
+          <input type="text" id="f-program" list="program-list" autocomplete="off">
+          <datalist id="program-list">
+            <option value="International Digital Ephemera Project">
+            <option value="Modern Endangered Archives Program">
+            <option value="Islamic Manuscripts Initiative"></option>
           </datalist>
           <span class="hint">Select from the list or type a custom value.</span>
         </div>
@@ -620,6 +631,7 @@ const YAML_TO_FIELD = {
   "Visibility":               "f-visibility",
   "Genre":                    "f-genre",
   "Repository":               "f-repository",
+  "Program":                  "f-program",
   "Language":                 "f-language",
   "Date.created":            "f-date-creation",
   "Date.normalized":          "f-date-normalized",
@@ -667,7 +679,8 @@ function buildConfig() {
     "Visibility":              v("f-visibility"),
     "Genre":                   v("f-genre"),
     "Repository":              v("f-repository"),
-    "Date.created":           v("f-date-creation"),
+    "Program":                 v("f-program"),
+    "Date.created":            v("f-date-creation"),
     "Date.normalized":         v("f-date-normalized"),
     "Type.typeOfResource":     v("f-type"),
     "Rights.copyrightStatus":  v("f-rights-status"),
