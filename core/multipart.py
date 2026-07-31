@@ -90,7 +90,9 @@ def _process_level0(title, file_prefix, ark, preset, defaults, ezid_user, ezid_p
 def _process_level1(scan_path, base_path, title, file_prefix, collection_ark, preset, defaults, ezid_user, ezid_password, ark_shoulder):
     dirs = sorted([d for d in os.scandir(scan_path) if d.is_dir()], key=lambda x: x.name)
     buf = io.StringIO()
-    headers = fields.combine(ALL_HEADERS, fields.headers("work", preset), MULTI_HEADERS)
+    # Item Sequence is unused on these rows but a downstream service requires
+    # the column to be present, so it is emitted empty.
+    headers = fields.combine(ALL_HEADERS, fields.headers("work", preset), MULTI_HEADERS, PAGE_HEADERS)
     writer = csv.DictWriter(buf, fieldnames=headers, extrasaction='ignore')
     writer.writeheader()
     works = []

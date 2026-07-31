@@ -15,7 +15,7 @@ from pydantic import BaseModel
 # Ensure repo root is in path so `core` package is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from core import dimensions, layers, multipart, standard
+from core import dimensions, fields, layers, multipart, standard
 
 app = FastAPI()
 
@@ -39,6 +39,15 @@ def _safe_join(base: pathlib.Path, relative: str) -> pathlib.Path:
     if not str(full).startswith(str(base.resolve()) + os.sep):
         raise HTTPException(status_code=400, detail=f"Invalid path in tree: {relative!r}")
     return full
+
+
+@app.get("/api/presets")
+async def list_presets():
+    """Preset name -> {description, defaults} for building the selector."""
+    return {
+        name: {"description": desc, "defaults": fields.preset_defaults(name)}
+        for name, desc in fields.presets().items()
+    }
 
 
 @app.post("/api/generate")

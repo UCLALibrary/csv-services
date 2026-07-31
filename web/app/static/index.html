@@ -307,6 +307,15 @@
         </div>
       </div>
 
+      <div class="form-section-label">Column Set</div>
+      <div class="field-group single">
+        <div class="field">
+          <label for="f-preset">Preset</label>
+          <select id="f-preset"></select>
+          <span class="hint">Choose a metadata template — books &amp; manuscripts, archival collections, or a partner template. Determines which columns appear in the generated CSVs.</span>
+        </div>
+      </div>
+
       <div class="form-section-label">Metadata Defaults</div>
       <div class="field-group">
         <div class="field">
@@ -588,6 +597,53 @@ function switchConfigTab(tab) {
 }
 
 
+// ── Preset selector ──────────────────────────────────────────────────────────
+// Presets come from field_definitions.yaml via the API so adding one there
+// needs no change here. Selecting a preset fills its defaults into the matching
+// form inputs; switching away clears only the values a preset put there.
+let PRESET_DEFAULTS = {};
+let presetFilled = {};
+
+fetch("/api/presets")
+  .then(r => r.json())
+  .then(presets => {
+    const sel = document.getElementById("f-preset");
+    sel.innerHTML = "";
+    for (const [name, spec] of Object.entries(presets)) {
+      PRESET_DEFAULTS[name] = spec.defaults || {};
+      sel.add(new Option(spec.description || name, name));
+    }
+    applyPresetDefaults();
+  })
+  .catch(() => {
+    // Selector stays empty; buildConfig sends no Preset and the server
+    // falls back to its default column set.
+  });
+
+document.getElementById("f-preset").addEventListener("change", applyPresetDefaults);
+
+function applyPresetDefaults() {
+  const defaults = PRESET_DEFAULTS[document.getElementById("f-preset").value] || {};
+
+  // Clear anything the previous preset filled and the user left untouched.
+  for (const [field, value] of Object.entries(presetFilled)) {
+    const el = document.getElementById(YAML_TO_FIELD[field]);
+    if (el && el.value === value) el.value = "";
+  }
+
+  presetFilled = {};
+  for (const [field, value] of Object.entries(defaults)) {
+    const id = YAML_TO_FIELD[field];
+    const el = id ? document.getElementById(id) : null;
+    // Fields with no input of their own (License, oai_set) still reach the
+    // CSV — the server applies preset defaults regardless.
+    if (!el || el.value.trim()) continue;
+    el.value = value;
+    presetFilled[field] = value;
+  }
+}
+
+
 // ── YAML upload ──────────────────────────────────────────────────────────────
 const yamlDrop = document.getElementById("yaml-drop");
 const yamlFileInput = document.getElementById("yaml-file-input");
@@ -628,6 +684,7 @@ const YAML_TO_FIELD = {
   "Collection Title":         "f-title",
   "Collection Shortcode":     "f-shortcode",
   "Collection ARK":           "f-collection-ark",
+  "Preset":                   "f-preset",
   "Visibility":               "f-visibility",
   "Genre":                    "f-genre",
   "Repository":               "f-repository",
@@ -665,6 +722,8 @@ function populateFormFromYaml(data) {
       el.value = String(val);
     });
   }
+  // Fill any preset defaults the file didn't set explicitly.
+  applyPresetDefaults();
 }
 
 
@@ -676,6 +735,7 @@ function buildConfig() {
     "Collection Title":        v("f-title"),
     "Collection Shortcode":    v("f-shortcode"),
     "Collection ARK":          v("f-collection-ark"),
+    "Preset":                  v("f-preset"),
     "Visibility":              v("f-visibility"),
     "Genre":                   v("f-genre"),
     "Repository":              v("f-repository"),

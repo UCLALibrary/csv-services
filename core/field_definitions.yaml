@@ -97,7 +97,8 @@ fields:
     pre_fillable: false
 
   Opac url:
-    levels: {collection: required, work: required}
+    levels: {collection: recommended, work: recommended}
+    tags: [books_mss, archival]
     pre_fillable: false
 
   # -- Optional fields (available for selection or in presets) --

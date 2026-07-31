@@ -151,7 +151,9 @@ def _write_complex_work_row(dir_entry, collection_ark, defaults, work_defaults, 
 
 
 def _process_works_and_pages(scan_path, base_path, file_prefix, collection_ark, preset, defaults, work_defaults, page_prefix, file_extensions, mode, ezid_user, ezid_password, ark_shoulder):
-    works_headers = fields.combine(ALL_HEADERS, fields.headers("work", preset), WORK_HEADERS)
+    # Item Sequence is unused on work rows but a downstream service requires
+    # the column to be present, so it is emitted empty.
+    works_headers = fields.combine(ALL_HEADERS, fields.headers("work", preset), WORK_HEADERS, SEQUENCE_HEADERS)
     complex_works = []
     outputs = {}
 
