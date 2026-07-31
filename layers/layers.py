@@ -29,7 +29,7 @@ Collection ARK:
 Visibility:
 Genre:
 Repository:
-Date.creation:
+Date.created:
 Date.normalized:
 Type.typeOfResource:
 Rights.copyrightStatus:
@@ -67,7 +67,7 @@ COLLECTION_HEADERS = [
     "Visibility",
     "Genre",
     "Repository",
-    "Date.creation",
+    "Date.created",
     "Date.normalized",
     "Type.typeOfResource",
     "Rights.copyrightStatus",

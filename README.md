@@ -72,7 +72,7 @@ The full path to the collection folder on your system (e.g. `Masters/dlmasters/m
 ### Metadata Defaults
 These values are applied to all works in the collection. All fields are optional.
 
-`Visibility` `Genre` `Repository` `Language` `Date.creation` `Date.normalized` `Type.typeOfResource` `Rights.copyrightStatus` `Rights.servicesContact`
+`Visibility` `Genre` `Repository` `Language` `Date.created` `Date.normalized` `Type.typeOfResource` `Rights.copyrightStatus` `Rights.servicesContact`
 
 ### Type-specific defaults
 

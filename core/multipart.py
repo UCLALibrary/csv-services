@@ -7,7 +7,7 @@ from .ark import get_ark, child_ark
 ALL_HEADERS = ["Item ARK", "Parent ARK", "Object Type", "Title", "File Name"]
 
 COLLECTION_HEADERS = [
-    "Visibility", "Genre", "Repository", "Date.creation", "Date.normalized",
+    "Visibility", "Genre", "Repository", "Date.created", "Date.normalized",
     "Type.typeOfResource", "Rights.copyrightStatus", "Rights.servicesContact", "Language"
 ]
 
@@ -27,7 +27,7 @@ Collection ARK:
 Visibility:
 Genre:
 Repository:
-Date.creation:
+Date.created:
 Date.normalized:
 Type.typeOfResource:
 Rights.copyrightStatus:
