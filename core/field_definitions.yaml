@@ -1,0 +1,407 @@
+# field_definitions.yaml (DRAFT — not yet placed in the repo)
+#
+# Suggested location once you're ready: core/field_definitions.yaml
+# (sits alongside standard.py / layers.py / multipart.py, read by a future
+# shared core/fields.py module).
+#
+# Scope: this file covers metadata fields subject to preset selection.
+# It does NOT cover structural columns each script always emits regardless
+# of preset (Item ARK, Parent ARK, Object Type, Title, File Name, and
+# page-level Item Sequence) — those stay hardcoded in the scripts.
+#
+# levels: which row type(s) a field applies to (collection / work / page /
+# layer) and its tier there:
+#   required    — always included in every preset
+#   recommended — included in "Required + Recommended" and all named presets
+#   optional    — only included via the picklist (Phase 2) or a preset tag
+#   (level omitted entirely = field doesn't apply at that level)
+#
+# tags: preset-specific groupings. A named preset = required ∪ recommended
+# ∪ fields tagged with that preset's tag (see `presets:` below).
+#
+# pre_fillable: whether the GUI should show a default-value input for this
+# field. false = column-only, never form-driven (e.g. Title, Local
+# identifier — always item-specific, never a shared default).
+
+fields:
+
+  # ── Existing core fields (already live in standard/layers/multipart) ──
+  Visibility:
+    levels: {collection: required, work: required}
+    pre_fillable: true
+
+  Genre:
+    levels: {collection: required, work: required}
+    pre_fillable: true
+
+  Repository:
+    levels: {collection: required, work: required}
+    pre_fillable: true
+
+  Program:
+    levels: {collection: required, work: required}
+    pre_fillable: true
+
+  Date.created:
+    levels: {collection: required, work: required}
+    pre_fillable: true
+
+  Date.normalized:
+    levels: {collection: required, work: required}
+    pre_fillable: true
+
+  Type.typeOfResource:
+    levels: {collection: required, work: required}
+    pre_fillable: true
+
+  Rights.copyrightStatus:
+    levels: {collection: required, work: required}
+    pre_fillable: true
+
+  Rights.servicesContact:
+    levels: {collection: required, work: required}
+    pre_fillable: true
+
+  Language:
+    levels: {collection: required, work: required}
+    pre_fillable: true
+
+  viewingHint:
+    levels: {collection: optional, work: optional}
+    pre_fillable: true
+
+  Text direction:
+    levels: {work: optional}
+    pre_fillable: true
+
+  # ── Required fields ───
+
+  Summary:
+    levels: {collection: required, work: optional}
+    pre_fillable: false
+
+  Representative image:
+    levels: {collection: required}
+    pre_fillable: false
+
+  Masthead:
+    levels: {collection: required}
+    pre_fillable: false
+
+  Thumbnail:
+    levels: {collection: required, work: required}
+    pre_fillable: false
+
+  Description.note:
+    levels: {collection: required, work: required}
+    pre_fillable: false
+
+  Opac url:
+    levels: {collection: required, work: required}
+    pre_fillable: false
+
+  # -- Optional fields (available for selection or in presets) --
+  
+  AltIdentifier.local:
+    levels: {collection: recommended, work: recommended}
+    tags: [arce, books_mss, archival]
+    pre_fillable: false
+
+  AltTitle.other:
+    levels: {collection: optional, work: optional}
+    tags: [arce, books_mss]
+    pre_fillable: false
+
+  Series:
+    levels: {work: optional}
+    tags: [arce, archival]
+    pre_fillable: false
+
+  Related Items:
+    levels: {collection: optional, work: optional}
+    tags: [arce, archival]
+    pre_fillable: false
+
+  Contents note:
+    levels: {collection: optional, work: optional}
+    tags: [arce, books_mss, archival]
+    pre_fillable: false
+
+  Description.fundingNote:
+    levels: {collection: optional, work: optional}
+    tags: [arce]
+    pre_fillable: false
+
+  Format.extent:
+    levels: {collection: optional, work: optional}
+    tags: [arce, books_mss, archival]
+    pre_fillable: false
+
+  Format.medium:
+    levels: {collection: optional, work: optional}
+    tags: [arce, books_mss, archival]
+    pre_fillable: false
+
+  Creator:
+    levels: {work: optional}
+    tags: [arce]
+    pre_fillable: false
+
+  Name.photographer:
+    levels: {collection: optional, work: optional}
+    tags: [arce]
+    pre_fillable: false
+
+  Statement of Responsibility:
+    levels: {collection: optional, work: optional}
+    tags: [arce]
+    pre_fillable: false
+
+  Note:
+    levels: {collection: optional, work: optional}
+    tags: [arce]
+    pre_fillable: false
+
+  References:
+    levels: {collection: optional, work: optional}
+    tags: [arce, books_mss, archival]
+    pre_fillable: false
+
+  Finding Aid URL:
+    levels: {collection: optional, work: optional}
+    tags: [archival]
+    pre_fillable: true
+
+  Name.subject:
+    levels: {collection: optional, work: optional}
+    tags: [arce]
+    pre_fillable: false
+
+  Subject geographic:
+    levels: {collection: optional, work: optional}
+    tags: [arce]
+    pre_fillable: false
+
+  Subject temporal:
+    levels: {collection: optional, work: optional}
+    tags: [arce]
+    pre_fillable: false
+
+  Subject topic:
+    levels: {collection: recommended, work: recommended}
+    tags: [arce, books_mss]
+    pre_fillable: false
+
+  Subject.culturalObject:
+    levels: {work: optional}
+    tags: [arce]
+    pre_fillable: false
+
+  Subject.domainTopic:
+    levels: {work: optional}
+    tags: [arce]
+    pre_fillable: false
+
+  Description.latitude:
+    levels: {collection: optional, work: optional}
+    tags: [arce]
+    pre_fillable: false
+
+  Description.longitude:
+    levels: {collection: optional, work: optional}
+    tags: [arce]
+    pre_fillable: false
+
+  License:
+    levels: {collection: optional, work: optional}
+    tags: [arce]
+    pre_fillable: true
+
+  Rights.statementLocal:
+    levels: {collection: recommended, work: recommended}
+    tags: [arce, books_mss, archival]
+    pre_fillable: true
+
+  oai_set:
+    levels: {collection: optional, work: optional}
+    tags: [arce]
+    pre_fillable: true
+
+  Edition:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Author:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Translator:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Name.scribe:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Illuminator:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Rubricator:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Printmaker:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Illustrator:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Engraver:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Calligrapher:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Commentator:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Printer:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Place of origin:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Publisher.publisherName:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Script:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Table of Contents:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Colophon:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Provenance:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Format:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Support:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Page layout:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Binding note:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Condition note:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Collation:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Foliation:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Illustrations note:
+    levels: {collection: optional, work: optional}
+    tags: [books_mss]
+    pre_fillable: false
+
+  Archival Collection Number:
+    levels: {collection: optional, work: optional}
+    tags: [archival]
+    pre_fillable: true
+
+  Archival Collection Title:
+    levels: {collection: optional, work: optional}
+    tags: [archival]
+    pre_fillable: true
+
+  Box:
+    levels: {work: optional}
+    tags: [archival]
+    pre_fillable: true
+
+  Folder:
+    levels: {work: optional}
+    tags: [archival]
+    pre_fillable: false
+
+
+presets:
+
+  required_recommended:
+    description: "Required + Recommended"
+    # required + recommended tier fields at each level
+
+  books_mss:
+    description: "Books / Manuscripts collections"
+    tag: books_mss
+
+  archival:
+    description: "Archival collections"
+    tag: archival
+
+  arce:
+    description: "American Research Center in Egypt (ARCE) partner template"
+    tag: arce
+    # Pre-fill defaults specific to this preset. The form-value-vs-preset-default
+    # precedence logic is deferred — this is
+    # just documenting ARCE's known defaults for when that's built.
+    defaults:
+      Program: "International Digital Ephemera Project"
+      Visibility: "open"
+      Repository: "American Research Center in Egypt"
+      License: "http://creativecommons.org/licenses/by-nc-sa/4.0/"
+      Rights.servicesContact: "http://www.arce.org/main/about/contact"
+      oai_set: "arce"
