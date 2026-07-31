@@ -6,6 +6,8 @@ from .ark import get_ark, child_ark
 
 ALL_HEADERS = ["Item ARK", "Parent ARK", "Object Type", "Title", "File Name"]
 
+COLLECTION_ONLY_HEADERS = ["Summary", "Representative image", "Masthead"]
+
 COLLECTION_HEADERS = [
     "Visibility", "Genre", "Repository", "Program", "Date.created", "Date.normalized",
     "Type.typeOfResource", "Rights.copyrightStatus", "Rights.servicesContact", "Language"
@@ -74,7 +76,7 @@ def _process_level0(title, file_prefix, ark, defaults, ezid_user, ezid_password,
         return ark, {}
     ark = get_ark(ezid_user, ezid_password, ark_shoulder)
     buf = io.StringIO()
-    headers = ALL_HEADERS + COLLECTION_HEADERS
+    headers = ALL_HEADERS + COLLECTION_HEADERS + COLLECTION_ONLY_HEADERS
     writer = csv.DictWriter(buf, fieldnames=headers, extrasaction='ignore')
     writer.writeheader()
     data = {"Item ARK": ark, "Object Type": "Collection", "Title": title}
