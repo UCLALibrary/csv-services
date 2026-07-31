@@ -67,7 +67,7 @@ fields:
     pre_fillable: true
 
   viewingHint:
-    levels: {collection: optional, work: optional}
+    levels: {work: optional}
     pre_fillable: true
 
   Text direction:

@@ -2,17 +2,13 @@ import csv
 import io
 import os
 
+from . import fields
 from .ark import get_ark, child_ark
 
 ALL_HEADERS = ["Item ARK", "Parent ARK", "Object Type", "Title", "File Name"]
 
-COLLECTION_ONLY_HEADERS = ["Summary", "Representative image", "Masthead"]
-
-COLLECTION_HEADERS = [
-    "Visibility", "Genre", "Repository", "Program", "Date.created", "Date.normalized",
-    "Type.typeOfResource", "Rights.copyrightStatus", "Rights.servicesContact", "Language"
-]
-
+# Display hints owned by this script rather than the preset system — always
+# present on work rows, whichever preset is chosen.
 PAGE_VOL_HEADERS = ["viewingHint", "Text direction"]
 
 SEQUENCE_HEADERS = ["Item Sequence"]
@@ -21,6 +17,9 @@ YAML_TEMPLATE = """\
 Collection Title:
 Collection Shortcode:
 Collection ARK:
+
+# Column set: required_recommended (default), arce, books_mss, archival
+Preset:
 
 # Collection and Work Defaults
 Visibility:
@@ -67,6 +66,7 @@ def _parse_config(config):
     shortcode = c.pop("Collection Shortcode", None)
     file_prefix = shortcode or title or "output"
     collection_ark = c.pop("Collection ARK", None)
+    preset = c.pop("Preset", None) or fields.DEFAULT_PRESET
     page_prefix = c.pop("page title prefix", None) or ""
     layer_prefix = c.pop("layer title prefix", None) or ""
     layer_type = c.pop("Layer Type", "Choice")
@@ -79,41 +79,43 @@ def _parse_config(config):
     ezid_password = c.pop("EZID Password", None)
     ark_shoulder = c.pop("ARK Shoulder", None)
     page_vol_defaults = {k: c.pop(k, None) for k in PAGE_VOL_HEADERS}
-    defaults = {k: c.get(k) for k in COLLECTION_HEADERS if k in c}
-    return title, file_prefix, collection_ark, defaults, page_prefix, layer_prefix, layer_type, file_extensions, page_vol_defaults, ezid_user, ezid_password, ark_shoulder
+    # Preset defaults fill in first; anything the user actually supplied wins.
+    defaults = fields.preset_defaults(preset)
+    defaults.update({k: v for k, v in c.items() if v is not None})
+    return title, file_prefix, collection_ark, preset, defaults, page_prefix, layer_prefix, layer_type, file_extensions, page_vol_defaults, ezid_user, ezid_password, ark_shoulder
 
 
-def _process_level0(title, file_prefix, ark, defaults, ezid_user, ezid_password, ark_shoulder):
+def _process_level0(title, file_prefix, ark, preset, defaults, ezid_user, ezid_password, ark_shoulder):
     if ark:
         return ark, {}
     ark = get_ark(ezid_user, ezid_password, ark_shoulder)
     buf = io.StringIO()
-    headers = ALL_HEADERS + COLLECTION_HEADERS + COLLECTION_ONLY_HEADERS
+    headers = fields.combine(ALL_HEADERS, fields.headers("collection", preset))
     writer = csv.DictWriter(buf, fieldnames=headers, extrasaction='ignore')
     writer.writeheader()
-    data = {"Item ARK": ark, "Object Type": "Collection", "Title": title}
-    data.update(defaults)
+    data = dict(defaults)
+    data.update({"Item ARK": ark, "Object Type": "Collection", "Title": title})
     writer.writerow(data)
     return ark, {f"{file_prefix}-collection.csv": buf.getvalue()}
 
 
-def _process_level1(scan_path, file_prefix, collection_ark, defaults, page_vol_defaults, ezid_user, ezid_password, ark_shoulder):
+def _process_level1(scan_path, file_prefix, collection_ark, preset, defaults, page_vol_defaults, ezid_user, ezid_password, ark_shoulder):
     dirs = sorted([d for d in os.scandir(scan_path) if d.is_dir()], key=lambda x: x.name)
     buf = io.StringIO()
-    headers = ALL_HEADERS + COLLECTION_HEADERS + PAGE_VOL_HEADERS
+    headers = fields.combine(ALL_HEADERS, fields.headers("work", preset), PAGE_VOL_HEADERS)
     writer = csv.DictWriter(buf, fieldnames=headers, extrasaction='ignore')
     writer.writeheader()
     works = []
     for d in dirs:
         ark = get_ark(ezid_user, ezid_password, ark_shoulder)
-        data = {
+        data = dict(defaults)
+        data.update(page_vol_defaults)
+        data.update({
             "Item ARK": ark,
             "Parent ARK": collection_ark,
             "Object Type": "Work",
             "Title": d.name
-        }
-        data.update(defaults)
-        data.update(page_vol_defaults)
+        })
         writer.writerow(data)
         works.append((d, ark))
     return works, {f"{file_prefix}-works.csv": buf.getvalue()}
@@ -182,13 +184,13 @@ def run(scan_path, base_path, config):
     Returns:
         Dict mapping CSV filename to CSV content as a string.
     """
-    title, file_prefix, collection_ark, defaults, page_prefix, layer_prefix, layer_type, file_extensions, page_vol_defaults, ezid_user, ezid_password, ark_shoulder = _parse_config(config)
+    title, file_prefix, collection_ark, preset, defaults, page_prefix, layer_prefix, layer_type, file_extensions, page_vol_defaults, ezid_user, ezid_password, ark_shoulder = _parse_config(config)
 
     outputs = {}
-    collection_ark, coll_csv = _process_level0(title, file_prefix, collection_ark, defaults, ezid_user, ezid_password, ark_shoulder)
+    collection_ark, coll_csv = _process_level0(title, file_prefix, collection_ark, preset, defaults, ezid_user, ezid_password, ark_shoulder)
     outputs.update(coll_csv)
 
-    works, works_csv = _process_level1(scan_path, file_prefix, collection_ark, defaults, page_vol_defaults, ezid_user, ezid_password, ark_shoulder)
+    works, works_csv = _process_level1(scan_path, file_prefix, collection_ark, preset, defaults, page_vol_defaults, ezid_user, ezid_password, ark_shoulder)
     outputs.update(works_csv)
 
     pages, pages_csv = _process_level2(file_prefix, works, page_prefix, ezid_user, ezid_password, ark_shoulder)
